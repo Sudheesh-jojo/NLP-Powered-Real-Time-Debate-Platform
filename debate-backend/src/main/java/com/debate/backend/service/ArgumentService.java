@@ -20,17 +20,20 @@ public class ArgumentService {
     private final DebateRepository debateRepository;
     private final UserRepository userRepository;
     private final NlpService nlpService;
+    private final ArgumentLinkService argumentLinkService;
 
     public ArgumentService(
             ArgumentRepository argumentRepository,
             DebateRepository debateRepository,
             UserRepository userRepository,
-            NlpService nlpService) {
+            NlpService nlpService,
+            ArgumentLinkService argumentLinkService) {
 
         this.argumentRepository = argumentRepository;
         this.debateRepository = debateRepository;
         this.userRepository = userRepository;
         this.nlpService = nlpService;
+        this.argumentLinkService = argumentLinkService;
     }
 
     public ArgumentDto createArgument(
@@ -56,12 +59,14 @@ public class ArgumentService {
                 nlpService.classifyArgument(argument.getMessageText());
 
 
-        savedArgument.setArgumentType(nlpResponse.getArgument_type());
-        savedArgument.setNlpConfidence(nlpResponse.getConfidence());
-        
-        savedArgument = argumentRepository.save(savedArgument);
+            savedArgument.setArgumentType(nlpResponse.getArgument_type());
+            savedArgument.setNlpConfidence(nlpResponse.getConfidence());
 
-        return convertToDto(savedArgument);
+            savedArgument = argumentRepository.save(savedArgument);
+
+            argumentLinkService.findAndCreateLinks(savedArgument);
+
+            return convertToDto(savedArgument);
     }
 
     private ArgumentDto convertToDto(Argument argument) {

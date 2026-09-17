@@ -7,6 +7,8 @@ import com.debate.backend.entity.ArgumentLink;
 import com.debate.backend.repository.ArgumentLinkRepository;
 import com.debate.backend.repository.ArgumentRepository;
 import org.springframework.stereotype.Service;
+import com.debate.backend.dto.NlpSimilarityResponse;
+import java.util.List;
 
 import java.util.UUID;
 
@@ -15,13 +17,16 @@ public class ArgumentLinkService {
 
     private final ArgumentLinkRepository argumentLinkRepository;
     private final ArgumentRepository argumentRepository;
+    private final NlpService nlpService;
 
     public ArgumentLinkService(
             ArgumentLinkRepository argumentLinkRepository,
-            ArgumentRepository argumentRepository) {
+            ArgumentRepository argumentRepository,
+            NlpService nlpService) {
 
         this.argumentLinkRepository = argumentLinkRepository;
         this.argumentRepository = argumentRepository;
+        this.nlpService = nlpService;
     }
 
     public ArgumentLinkDto createLink(
@@ -65,5 +70,48 @@ public class ArgumentLinkService {
         dto.setCreatedAt(link.getCreatedAt());
 
         return dto;
+    }
+    public List<ArgumentLinkDto> getLinksByDebate(UUID debateId) {
+
+        return argumentLinkRepository
+                .findLinksByDebateId(debateId)
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+    public void findAndCreateLinks(Argument newArgument) {
+
+        List<Argument> previousArguments =
+                argumentRepository.findByDebateId(
+                        newArgument.getDebate().getId()
+                );
+
+        for (Argument previousArgument : previousArguments) {
+
+            if (previousArgument.getId()
+                    .equals(newArgument.getId())) {
+                continue;
+            }
+
+            NlpSimilarityResponse response =
+                    nlpService.calculateSimilarity(
+                            previousArgument.getMessageText(),
+                            newArgument.getMessageText()
+                    );
+
+            double similarity = response.getSimilarity();
+
+            if (similarity >= 0.60) {
+
+                ArgumentLink link = new ArgumentLink();
+
+                link.setFromArgument(previousArgument);
+                link.setToArgument(newArgument);
+                link.setLinkType("RELATED");
+                link.setSimilarityScore(similarity);
+
+                argumentLinkRepository.save(link);
+            }
+        }
     }
 }

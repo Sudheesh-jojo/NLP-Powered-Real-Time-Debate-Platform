@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/debate-platform.iml" filepath="$PROJECT_DIR$/.idea/debate-platform.iml" />
+      <module fileurl="file://$PROJECT_DIR$/debate_frontend/debate_frontend.iml" filepath="$PROJECT_DIR$/debate_frontend/debate_frontend.iml" />
     </modules>
   </component>
 </project>
